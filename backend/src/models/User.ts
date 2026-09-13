@@ -1,5 +1,5 @@
+// src/models/User.ts
 import mongoose, { Schema, Document, Model } from 'mongoose';
-import bcrypt from 'bcryptjs';
 
 export enum UserRole {
   SUPER_ADMIN = 'SUPER_ADMIN',
@@ -26,7 +26,11 @@ export interface IUser extends Document {
   mfaEnabled: boolean;
   mfaSecret?: string;
   recoveryCodes?: string[];
-  comparePassword(candidatePassword: string): Promise<boolean>;
+  passwordResetTokenHash?: string;
+  passwordResetExpiresAt?: Date;
+  tokenVersion: number;
+  failedLoginAttempts: number;
+  lockUntil?: Date;
 }
 
 const UserSchema: Schema = new Schema(
@@ -73,7 +77,26 @@ const UserSchema: Schema = new Schema(
     },
     recoveryCodes: [{
       type: String
-    }]
+    }],
+    passwordResetTokenHash: {
+      type: String,
+      select: false
+    },
+    passwordResetExpiresAt: {
+      type: Date,
+      select: false
+    },
+    tokenVersion: {
+      type: Number,
+      default: 0
+    },
+    failedLoginAttempts: {
+      type: Number,
+      default: 0
+    },
+    lockUntil: {
+      type: Date
+    }
   },
   {
     timestamps: true
@@ -84,15 +107,6 @@ const UserSchema: Schema = new Schema(
 UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1 });
 UserSchema.index({ status: 1 });
-
-// Method to compare password
-UserSchema.methods.comparePassword = function(candidatePassword: string): boolean {
-  try {
-    return bcrypt.compareSync(candidatePassword, this.password);
-  } catch (error) {
-    return false;
-  }
-};
 
 const User: Model<IUser> = mongoose.model<IUser>('User', UserSchema);
 
