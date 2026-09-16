@@ -52,7 +52,6 @@ const ClientProfileSchema: Schema = new Schema(
 );
 
 // Indexes
-ClientProfileSchema.index({ userId: 1 });
 ClientProfileSchema.index({ assignedEmployeeId: 1 });
 ClientProfileSchema.index({ businessName: 1 });
 

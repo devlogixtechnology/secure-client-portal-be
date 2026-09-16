@@ -1,5 +1,4 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
-import bcrypt from 'bcryptjs';
 
 export enum UserRole {
   SUPER_ADMIN = 'SUPER_ADMIN',
@@ -26,7 +25,11 @@ export interface IUser extends Document {
   mfaEnabled: boolean;
   mfaSecret?: string;
   recoveryCodes?: string[];
-  comparePassword(candidatePassword: string): Promise<boolean>;
+  failedLoginAttempts: number;
+  lockUntil?: Date;
+  passwordResetTokenHash?: string;
+  passwordResetExpiresAt?: Date;
+  tokenVersion: number;
 }
 
 const UserSchema: Schema = new Schema(
@@ -40,8 +43,7 @@ const UserSchema: Schema = new Schema(
     },
     password: {
       type: String,
-      required: true,
-      minlength: 12
+      required: true
     },
     role: {
       type: String,
@@ -73,7 +75,26 @@ const UserSchema: Schema = new Schema(
     },
     recoveryCodes: [{
       type: String
-    }]
+    }],
+    failedLoginAttempts: {
+      type: Number,
+      default: 0
+    },
+    lockUntil: {
+      type: Date
+    },
+    passwordResetTokenHash: {
+      type: String,
+      select: false
+    },
+    passwordResetExpiresAt: {
+      type: Date,
+      select: false
+    },
+    tokenVersion: {
+      type: Number,
+      default: 0
+    }
   },
   {
     timestamps: true
@@ -81,18 +102,8 @@ const UserSchema: Schema = new Schema(
 );
 
 // Indexes
-UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1 });
 UserSchema.index({ status: 1 });
-
-// Method to compare password
-UserSchema.methods.comparePassword = function(candidatePassword: string): boolean {
-  try {
-    return bcrypt.compareSync(candidatePassword, this.password);
-  } catch (error) {
-    return false;
-  }
-};
 
 const User: Model<IUser> = mongoose.model<IUser>('User', UserSchema);
 

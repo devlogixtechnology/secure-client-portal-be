@@ -1,6 +1,7 @@
 import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import config from './config';
 import { connectDatabase } from './config/database';
 import { errorMiddleware } from './middleware/error.middleware';
@@ -16,6 +17,7 @@ export const app: Application = express();
 // ==========================================
 // 1. Core Security & Request Middleware
 // ==========================================
+app.disable('x-powered-by');
 app.use(helmet());
 
 app.use(
@@ -29,6 +31,7 @@ app.use(
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
 
 // ==========================================
 // 2. Logging Middleware

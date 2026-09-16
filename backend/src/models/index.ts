@@ -1,24 +1,42 @@
-// Mongoose Models Index
-// Central export point for all Mongoose models
-
-import User from './User';
-import ClientProfile from './ClientProfile';
-import EmployeeAssignment from './EmployeeAssignment';
-import FileRecord from './FileRecord';
-import FileRequest from './FileRequest';
-import ChatThread from './ChatThread';
-import Message from './Message';
-import AuditLog from './AuditLog';
+import User, { UserRole, UserStatus, IUser } from './User';
+import ClientProfile, { IClientProfile } from './ClientProfile';
+import EmployeeAssignment, { IEmployeeAssignment } from './EmployeeAssignment';
+import FileRecord, { IFileRecord, UploadPurpose, VirusScanStatus } from './FileRecord';
+import FileRequest, { IFileRequest, FileRequestStatus } from './FileRequest';
+import ChatThread, { IChatThread, ThreadType } from './ChatThread';
+import Message, { IMessage } from './Message';
+import AuditLog, { IAuditLog, AuthorizationResult } from './AuditLog';
+import RefreshToken, { IRefreshToken } from './RefreshToken';
+import ContactMessage, { IContactMessage } from './ContactMessage';
 
 export {
   User,
+  UserRole,
+  UserStatus,
+  IUser,
   ClientProfile,
+  IClientProfile,
   EmployeeAssignment,
+  IEmployeeAssignment,
   FileRecord,
+  IFileRecord,
+  UploadPurpose,
+  VirusScanStatus,
   FileRequest,
+  IFileRequest,
+  FileRequestStatus,
   ChatThread,
+  IChatThread,
+  ThreadType,
   Message,
-  AuditLog
+  IMessage,
+  AuditLog,
+  IAuditLog,
+  AuthorizationResult,
+  RefreshToken,
+  IRefreshToken,
+  ContactMessage,
+  IContactMessage
 };
 
 export default {
@@ -29,5 +47,7 @@ export default {
   FileRequest,
   ChatThread,
   Message,
-  AuditLog
+  AuditLog,
+  RefreshToken,
+  ContactMessage
 };

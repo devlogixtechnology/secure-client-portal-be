@@ -1,3 +1,6 @@
-// Services export index
-// Business logic services (AuthService, UserService, FileService, etc.) will be exported here
-export {};
+export * from './auth.service';
+export * from './user.service';
+export * from './assignment.service';
+export * from './client.service';
+export * from './employee.service';
+export * from './contact.service';
