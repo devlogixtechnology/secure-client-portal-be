@@ -1,0 +1,551 @@
+{
+  "info": {
+    "_postman_id": "d94eaf2e-4434-47bf-a51b-25cd0ca9c43b",
+    "name": "Secure Client Portal RBAC Coverage",
+    "description": "Postman collection for implemented Secure Client Portal backend endpoints. Includes setup logins, happy-path requests, automated RBAC sweeps, and focused bypass demos.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 Setup - Login And Capture Tokens",
+      "item": [
+        {
+          "name": "Login - SUPER_ADMIN",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{superAdminEmail}}\",\n  \"password\": \"{{superAdminPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('SUPER_ADMIN login succeeds', function () { pm.response.to.have.status(200); });",
+            "const json = pm.response.json();",
+            "pm.environment.set('superAdminToken', json.data.token);",
+            "pm.environment.set('superAdminId', json.data.user.id);"
+          ] } }]
+        },
+        {
+          "name": "Login - ADMIN",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('ADMIN login succeeds', function () { pm.response.to.have.status(200); });",
+            "const json = pm.response.json();",
+            "pm.environment.set('adminToken', json.data.token);",
+            "pm.environment.set('adminId', json.data.user.id);"
+          ] } }]
+        },
+        {
+          "name": "Login - EMPLOYEE",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{employeeEmail}}\",\n  \"password\": \"{{employeePassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('EMPLOYEE login succeeds', function () { pm.response.to.have.status(200); });",
+            "const json = pm.response.json();",
+            "pm.environment.set('employeeToken', json.data.token);",
+            "pm.environment.set('employeeId', json.data.user.id);"
+          ] } }]
+        },
+        {
+          "name": "Login - CLIENT",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{clientEmail}}\",\n  \"password\": \"{{clientPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('CLIENT login succeeds', function () { pm.response.to.have.status(200); });",
+            "const json = pm.response.json();",
+            "pm.environment.set('clientToken', json.data.token);",
+            "pm.environment.set('clientId', json.data.user.id);"
+          ] } }]
+        },
+        {
+          "name": "Admin - List Users And Capture Seed IDs",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/users?limit=100"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Admin can list users', function () { pm.response.to.have.status(200); });",
+            "const json = pm.response.json();",
+            "const users = json.data || [];",
+            "for (const user of users) {",
+            "  if (user.role === 'SUPER_ADMIN') pm.environment.set('superAdminId', user.id);",
+            "  if (user.role === 'ADMIN') pm.environment.set('adminId', user.id);",
+            "  if (user.role === 'EMPLOYEE') pm.environment.set('employeeId', user.id);",
+            "  if (user.role === 'CLIENT') pm.environment.set('clientId', user.id);",
+            "}"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "01 Implemented API - Happy Paths",
+      "item": [
+        {
+          "name": "GET Root Health",
+          "request": { "method": "GET", "url": "{{rootUrl}}/health" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('health responds', function () { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "GET Versioned Health",
+          "request": { "method": "GET", "url": "{{baseUrl}}/health" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('versioned health responds', function () { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "POST Auth - Password Reset Request",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{clientEmail}}\"\n}" },
+            "url": "{{baseUrl}}/auth/password-reset/request"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('password reset request returns 200', function () { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "GET Admin - List Users",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/users?limit=20"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('admin lists users', function () { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "GET Admin - User Details",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/users/{{clientId}}"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('admin reads user detail', function () { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "GET Admin - List Assignments",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/assignments?limit=20"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('admin lists assignments', function () { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "GET Client - My Profile",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/clients/profile"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('client reads own profile', function () { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "GET Employee - My Assigned Clients",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{employeeToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/employees/clients"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('employee lists assigned clients', function () { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "GET Employee - Assigned Client Details",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{employeeToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/employees/clients/{{clientId}}"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('employee reads assigned client', function () { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "POST Public - Contact Form",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Meeting Demo User\",\n  \"email\": \"demo@example.com\",\n  \"phone\": \"+1234567890\",\n  \"subject\": \"Portal Inquiry\",\n  \"message\": \"I am interested in learning more.\"\n}" },
+            "url": "{{baseUrl}}/public/contact"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('contact form creates message', function () { pm.response.to.have.status(201); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "02 RBAC Matrix - Automated Sweeps",
+      "description": "Each request runs an RBAC sweep for all roles using pm.sendRequest. Allowed roles must not return 401/403; denied roles must return the configured denial status.",
+      "item": [
+        {
+          "name": "RBAC - Admin List Users",
+          "request": { "method": "GET", "url": "{{baseUrl}}/admin/users?limit=1" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const baseUrl = pm.environment.get('baseUrl');",
+            "const roles = { SUPER_ADMIN: pm.environment.get('superAdminToken'), ADMIN: pm.environment.get('adminToken'), EMPLOYEE: pm.environment.get('employeeToken'), CLIENT: pm.environment.get('clientToken') };",
+            "const expected = { SUPER_ADMIN: 'allow', ADMIN: 'allow', EMPLOYEE: 403, CLIENT: 403, ANONYMOUS: 401 };",
+            "function check(role, res) { const status = res.code; if (expected[role] === 'allow') { pm.test(role + ' is allowed for GET /admin/users', function () { pm.expect([401, 403]).to.not.include(status); }); } else { pm.test(role + ' denied for GET /admin/users', function () { pm.expect(status).to.eql(expected[role]); }); } }",
+            "Object.keys(roles).forEach(function (role) { pm.sendRequest({ url: baseUrl + '/admin/users?limit=1', method: 'GET', header: { Authorization: 'Bearer ' + roles[role] } }, function (err, res) { pm.expect(err).to.eql(null); check(role, res); }); });",
+            "pm.sendRequest({ url: baseUrl + '/admin/users?limit=1', method: 'GET' }, function (err, res) { pm.expect(err).to.eql(null); check('ANONYMOUS', res); });"
+          ] } }]
+        },
+        {
+          "name": "RBAC - Admin Create Employee",
+          "request": { "method": "POST", "url": "{{baseUrl}}/admin/users/employees" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const baseUrl = pm.environment.get('baseUrl');",
+            "const roles = { SUPER_ADMIN: pm.environment.get('superAdminToken'), ADMIN: pm.environment.get('adminToken'), EMPLOYEE: pm.environment.get('employeeToken'), CLIENT: pm.environment.get('clientToken') };",
+            "const expected = { SUPER_ADMIN: 'allow', ADMIN: 'allow', EMPLOYEE: 403, CLIENT: 403, ANONYMOUS: 401 };",
+            "const body = JSON.stringify({ email: 'rbac.employee@example.com', firstName: 'RBAC', lastName: 'Employee' });",
+            "function check(role, res) { const status = res.code; if (expected[role] === 'allow') { pm.test(role + ' passes role guard for POST /admin/users/employees', function () { pm.expect([401, 403]).to.not.include(status); }); } else { pm.test(role + ' denied for POST /admin/users/employees', function () { pm.expect(status).to.eql(expected[role]); }); } }",
+            "Object.keys(roles).forEach(function (role) { pm.sendRequest({ url: baseUrl + '/admin/users/employees', method: 'POST', header: { Authorization: 'Bearer ' + roles[role], 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: body } }, function (err, res) { pm.expect(err).to.eql(null); check(role, res); }); });",
+            "pm.sendRequest({ url: baseUrl + '/admin/users/employees', method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: body } }, function (err, res) { pm.expect(err).to.eql(null); check('ANONYMOUS', res); });"
+          ] } }]
+        },
+        {
+          "name": "RBAC - Admin Create Client",
+          "request": { "method": "POST", "url": "{{baseUrl}}/admin/users/clients" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const baseUrl = pm.environment.get('baseUrl');",
+            "const employeeId = pm.environment.get('employeeId');",
+            "const roles = { SUPER_ADMIN: pm.environment.get('superAdminToken'), ADMIN: pm.environment.get('adminToken'), EMPLOYEE: pm.environment.get('employeeToken'), CLIENT: pm.environment.get('clientToken') };",
+            "const expected = { SUPER_ADMIN: 'allow', ADMIN: 'allow', EMPLOYEE: 403, CLIENT: 403, ANONYMOUS: 401 };",
+            "const body = JSON.stringify({ email: 'rbac.client@example.com', businessName: 'RBAC Client' });",
+            "function check(role, res) { const status = res.code; if (expected[role] === 'allow') { pm.test(role + ' passes role guard for POST /admin/users/clients', function () { pm.expect([401, 403]).to.not.include(status); }); } else { pm.test(role + ' denied for POST /admin/users/clients', function () { pm.expect(status).to.eql(expected[role]); }); } }",
+            "Object.keys(roles).forEach(function (role) { pm.sendRequest({ url: baseUrl + '/admin/users/clients', method: 'POST', header: { Authorization: 'Bearer ' + roles[role], 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: body } }, function (err, res) { pm.expect(err).to.eql(null); check(role, res); }); });",
+            "pm.sendRequest({ url: baseUrl + '/admin/users/clients', method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: body } }, function (err, res) { pm.expect(err).to.eql(null); check('ANONYMOUS', res); });"
+          ] } }]
+        },
+        {
+          "name": "RBAC - Admin User Details",
+          "request": { "method": "GET", "url": "{{baseUrl}}/admin/users/{{clientId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const baseUrl = pm.environment.get('baseUrl');",
+            "const clientId = pm.environment.get('clientId') || pm.environment.get('invalidObjectId');",
+            "const roles = { SUPER_ADMIN: pm.environment.get('superAdminToken'), ADMIN: pm.environment.get('adminToken'), EMPLOYEE: pm.environment.get('employeeToken'), CLIENT: pm.environment.get('clientToken') };",
+            "const expected = { SUPER_ADMIN: 'allow', ADMIN: 'allow', EMPLOYEE: 403, CLIENT: 403, ANONYMOUS: 401 };",
+            "function check(role, res) { const status = res.code; if (expected[role] === 'allow') { pm.test(role + ' passes role guard for GET /admin/users/:id', function () { pm.expect([401, 403]).to.not.include(status); }); } else { pm.test(role + ' denied for GET /admin/users/:id', function () { pm.expect(status).to.eql(expected[role]); }); } }",
+            "Object.keys(roles).forEach(function (role) { pm.sendRequest({ url: baseUrl + '/admin/users/' + clientId, method: 'GET', header: { Authorization: 'Bearer ' + roles[role] } }, function (err, res) { pm.expect(err).to.eql(null); check(role, res); }); });",
+            "pm.sendRequest({ url: baseUrl + '/admin/users/' + clientId, method: 'GET' }, function (err, res) { pm.expect(err).to.eql(null); check('ANONYMOUS', res); });"
+          ] } }]
+        },
+        {
+          "name": "RBAC - Admin Update User",
+          "request": { "method": "PATCH", "url": "{{baseUrl}}/admin/users/{{invalidObjectId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const baseUrl = pm.environment.get('baseUrl');",
+            "const id = pm.environment.get('invalidObjectId');",
+            "const roles = { SUPER_ADMIN: pm.environment.get('superAdminToken'), ADMIN: pm.environment.get('adminToken'), EMPLOYEE: pm.environment.get('employeeToken'), CLIENT: pm.environment.get('clientToken') };",
+            "const expected = { SUPER_ADMIN: 'allow', ADMIN: 'allow', EMPLOYEE: 403, CLIENT: 403, ANONYMOUS: 401 };",
+            "const body = JSON.stringify({ firstName: 'RBAC', lastName: 'Probe' });",
+            "function check(role, res) { const status = res.code; if (expected[role] === 'allow') { pm.test(role + ' passes role guard for PATCH /admin/users/:id', function () { pm.expect([401, 403]).to.not.include(status); }); } else { pm.test(role + ' denied for PATCH /admin/users/:id', function () { pm.expect(status).to.eql(expected[role]); }); } }",
+            "Object.keys(roles).forEach(function (role) { pm.sendRequest({ url: baseUrl + '/admin/users/' + id, method: 'PATCH', header: { Authorization: 'Bearer ' + roles[role], 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: body } }, function (err, res) { pm.expect(err).to.eql(null); check(role, res); }); });",
+            "pm.sendRequest({ url: baseUrl + '/admin/users/' + id, method: 'PATCH', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: body } }, function (err, res) { pm.expect(err).to.eql(null); check('ANONYMOUS', res); });"
+          ] } }]
+        },
+        {
+          "name": "RBAC - Admin Deactivate User",
+          "request": { "method": "POST", "url": "{{baseUrl}}/admin/users/{{invalidObjectId}}/deactivate" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const baseUrl = pm.environment.get('baseUrl');",
+            "const id = pm.environment.get('invalidObjectId');",
+            "const roles = { SUPER_ADMIN: pm.environment.get('superAdminToken'), ADMIN: pm.environment.get('adminToken'), EMPLOYEE: pm.environment.get('employeeToken'), CLIENT: pm.environment.get('clientToken') };",
+            "const expected = { SUPER_ADMIN: 'allow', ADMIN: 'allow', EMPLOYEE: 403, CLIENT: 403, ANONYMOUS: 401 };",
+            "function check(role, res) { const status = res.code; if (expected[role] === 'allow') { pm.test(role + ' passes role guard for POST /admin/users/:id/deactivate', function () { pm.expect([401, 403]).to.not.include(status); }); } else { pm.test(role + ' denied for POST /admin/users/:id/deactivate', function () { pm.expect(status).to.eql(expected[role]); }); } }",
+            "Object.keys(roles).forEach(function (role) { pm.sendRequest({ url: baseUrl + '/admin/users/' + id + '/deactivate', method: 'POST', header: { Authorization: 'Bearer ' + roles[role] } }, function (err, res) { pm.expect(err).to.eql(null); check(role, res); }); });",
+            "pm.sendRequest({ url: baseUrl + '/admin/users/' + id + '/deactivate', method: 'POST' }, function (err, res) { pm.expect(err).to.eql(null); check('ANONYMOUS', res); });"
+          ] } }]
+        },
+        {
+          "name": "RBAC - Admin Reactivate User",
+          "request": { "method": "POST", "url": "{{baseUrl}}/admin/users/{{invalidObjectId}}/reactivate" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const baseUrl = pm.environment.get('baseUrl');",
+            "const id = pm.environment.get('invalidObjectId');",
+            "const roles = { SUPER_ADMIN: pm.environment.get('superAdminToken'), ADMIN: pm.environment.get('adminToken'), EMPLOYEE: pm.environment.get('employeeToken'), CLIENT: pm.environment.get('clientToken') };",
+            "const expected = { SUPER_ADMIN: 'allow', ADMIN: 'allow', EMPLOYEE: 403, CLIENT: 403, ANONYMOUS: 401 };",
+            "function check(role, res) { const status = res.code; if (expected[role] === 'allow') { pm.test(role + ' passes role guard for POST /admin/users/:id/reactivate', function () { pm.expect([401, 403]).to.not.include(status); }); } else { pm.test(role + ' denied for POST /admin/users/:id/reactivate', function () { pm.expect(status).to.eql(expected[role]); }); } }",
+            "Object.keys(roles).forEach(function (role) { pm.sendRequest({ url: baseUrl + '/admin/users/' + id + '/reactivate', method: 'POST', header: { Authorization: 'Bearer ' + roles[role] } }, function (err, res) { pm.expect(err).to.eql(null); check(role, res); }); });",
+            "pm.sendRequest({ url: baseUrl + '/admin/users/' + id + '/reactivate', method: 'POST' }, function (err, res) { pm.expect(err).to.eql(null); check('ANONYMOUS', res); });"
+          ] } }]
+        },
+        {
+          "name": "RBAC - Admin Send Client Credentials",
+          "request": { "method": "POST", "url": "{{baseUrl}}/admin/users/{{invalidObjectId}}/send-credentials" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const baseUrl = pm.environment.get('baseUrl');",
+            "const id = pm.environment.get('invalidObjectId');",
+            "const roles = { SUPER_ADMIN: pm.environment.get('superAdminToken'), ADMIN: pm.environment.get('adminToken'), EMPLOYEE: pm.environment.get('employeeToken'), CLIENT: pm.environment.get('clientToken') };",
+            "const expected = { SUPER_ADMIN: 'allow', ADMIN: 'allow', EMPLOYEE: 403, CLIENT: 403, ANONYMOUS: 401 };",
+            "function check(role, res) { const status = res.code; if (expected[role] === 'allow') { pm.test(role + ' passes role guard for POST /admin/users/:id/send-credentials', function () { pm.expect([401, 403]).to.not.include(status); }); } else { pm.test(role + ' denied for POST /admin/users/:id/send-credentials', function () { pm.expect(status).to.eql(expected[role]); }); } }",
+            "Object.keys(roles).forEach(function (role) { pm.sendRequest({ url: baseUrl + '/admin/users/' + id + '/send-credentials', method: 'POST', header: { Authorization: 'Bearer ' + roles[role] } }, function (err, res) { pm.expect(err).to.eql(null); check(role, res); }); });",
+            "pm.sendRequest({ url: baseUrl + '/admin/users/' + id + '/send-credentials', method: 'POST' }, function (err, res) { pm.expect(err).to.eql(null); check('ANONYMOUS', res); });"
+          ] } }]
+        },
+        {
+          "name": "RBAC - Admin Assignments List",
+          "request": { "method": "GET", "url": "{{baseUrl}}/admin/assignments?limit=1" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const baseUrl = pm.environment.get('baseUrl');",
+            "const roles = { SUPER_ADMIN: pm.environment.get('superAdminToken'), ADMIN: pm.environment.get('adminToken'), EMPLOYEE: pm.environment.get('employeeToken'), CLIENT: pm.environment.get('clientToken') };",
+            "const expected = { SUPER_ADMIN: 'allow', ADMIN: 'allow', EMPLOYEE: 403, CLIENT: 403, ANONYMOUS: 401 };",
+            "function check(role, res) { const status = res.code; if (expected[role] === 'allow') { pm.test(role + ' is allowed for GET /admin/assignments', function () { pm.expect([401, 403]).to.not.include(status); }); } else { pm.test(role + ' denied for GET /admin/assignments', function () { pm.expect(status).to.eql(expected[role]); }); } }",
+            "Object.keys(roles).forEach(function (role) { pm.sendRequest({ url: baseUrl + '/admin/assignments?limit=1', method: 'GET', header: { Authorization: 'Bearer ' + roles[role] } }, function (err, res) { pm.expect(err).to.eql(null); check(role, res); }); });",
+            "pm.sendRequest({ url: baseUrl + '/admin/assignments?limit=1', method: 'GET' }, function (err, res) { pm.expect(err).to.eql(null); check('ANONYMOUS', res); });"
+          ] } }]
+        },
+        {
+          "name": "RBAC - Admin Assign Client",
+          "request": { "method": "POST", "url": "{{baseUrl}}/admin/assignments" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const baseUrl = pm.environment.get('baseUrl');",
+            "const roles = { SUPER_ADMIN: pm.environment.get('superAdminToken'), ADMIN: pm.environment.get('adminToken'), EMPLOYEE: pm.environment.get('employeeToken'), CLIENT: pm.environment.get('clientToken') };",
+            "const expected = { SUPER_ADMIN: 'allow', ADMIN: 'allow', EMPLOYEE: 403, CLIENT: 403, ANONYMOUS: 401 };",
+            "const body = JSON.stringify({ employeeId: pm.environment.get('invalidObjectId'), clientId: pm.environment.get('invalidObjectId') });",
+            "function check(role, res) { const status = res.code; if (expected[role] === 'allow') { pm.test(role + ' passes role guard for POST /admin/assignments', function () { pm.expect([401, 403]).to.not.include(status); }); } else { pm.test(role + ' denied for POST /admin/assignments', function () { pm.expect(status).to.eql(expected[role]); }); } }",
+            "Object.keys(roles).forEach(function (role) { pm.sendRequest({ url: baseUrl + '/admin/assignments', method: 'POST', header: { Authorization: 'Bearer ' + roles[role], 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: body } }, function (err, res) { pm.expect(err).to.eql(null); check(role, res); }); });",
+            "pm.sendRequest({ url: baseUrl + '/admin/assignments', method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: body } }, function (err, res) { pm.expect(err).to.eql(null); check('ANONYMOUS', res); });"
+          ] } }]
+        },
+        {
+          "name": "RBAC - Admin Reassign Client PUT",
+          "request": { "method": "PUT", "url": "{{baseUrl}}/admin/assignments/reassign" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const baseUrl = pm.environment.get('baseUrl');",
+            "const id = pm.environment.get('invalidObjectId');",
+            "const roles = { SUPER_ADMIN: pm.environment.get('superAdminToken'), ADMIN: pm.environment.get('adminToken'), EMPLOYEE: pm.environment.get('employeeToken'), CLIENT: pm.environment.get('clientToken') };",
+            "const expected = { SUPER_ADMIN: 'allow', ADMIN: 'allow', EMPLOYEE: 403, CLIENT: 403, ANONYMOUS: 401 };",
+            "const body = JSON.stringify({ clientId: id, newEmployeeId: id });",
+            "function check(role, res) { const status = res.code; if (expected[role] === 'allow') { pm.test(role + ' passes role guard for PUT /admin/assignments/reassign', function () { pm.expect([401, 403]).to.not.include(status); }); } else { pm.test(role + ' denied for PUT /admin/assignments/reassign', function () { pm.expect(status).to.eql(expected[role]); }); } }",
+            "Object.keys(roles).forEach(function (role) { pm.sendRequest({ url: baseUrl + '/admin/assignments/reassign', method: 'PUT', header: { Authorization: 'Bearer ' + roles[role], 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: body } }, function (err, res) { pm.expect(err).to.eql(null); check(role, res); }); });",
+            "pm.sendRequest({ url: baseUrl + '/admin/assignments/reassign', method: 'PUT', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: body } }, function (err, res) { pm.expect(err).to.eql(null); check('ANONYMOUS', res); });"
+          ] } }]
+        },
+        {
+          "name": "RBAC - Admin Reassign Client POST",
+          "request": { "method": "POST", "url": "{{baseUrl}}/admin/assignments/reassign" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const baseUrl = pm.environment.get('baseUrl');",
+            "const id = pm.environment.get('invalidObjectId');",
+            "const roles = { SUPER_ADMIN: pm.environment.get('superAdminToken'), ADMIN: pm.environment.get('adminToken'), EMPLOYEE: pm.environment.get('employeeToken'), CLIENT: pm.environment.get('clientToken') };",
+            "const expected = { SUPER_ADMIN: 'allow', ADMIN: 'allow', EMPLOYEE: 403, CLIENT: 403, ANONYMOUS: 401 };",
+            "const body = JSON.stringify({ clientId: id, newEmployeeId: id });",
+            "function check(role, res) { const status = res.code; if (expected[role] === 'allow') { pm.test(role + ' passes role guard for POST /admin/assignments/reassign', function () { pm.expect([401, 403]).to.not.include(status); }); } else { pm.test(role + ' denied for POST /admin/assignments/reassign', function () { pm.expect(status).to.eql(expected[role]); }); } }",
+            "Object.keys(roles).forEach(function (role) { pm.sendRequest({ url: baseUrl + '/admin/assignments/reassign', method: 'POST', header: { Authorization: 'Bearer ' + roles[role], 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: body } }, function (err, res) { pm.expect(err).to.eql(null); check(role, res); }); });",
+            "pm.sendRequest({ url: baseUrl + '/admin/assignments/reassign', method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: body } }, function (err, res) { pm.expect(err).to.eql(null); check('ANONYMOUS', res); });"
+          ] } }]
+        },
+        {
+          "name": "RBAC - Admin Remove Assignment",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/admin/assignments/{{invalidObjectId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const baseUrl = pm.environment.get('baseUrl');",
+            "const id = pm.environment.get('invalidObjectId');",
+            "const roles = { SUPER_ADMIN: pm.environment.get('superAdminToken'), ADMIN: pm.environment.get('adminToken'), EMPLOYEE: pm.environment.get('employeeToken'), CLIENT: pm.environment.get('clientToken') };",
+            "const expected = { SUPER_ADMIN: 'allow', ADMIN: 'allow', EMPLOYEE: 403, CLIENT: 403, ANONYMOUS: 401 };",
+            "function check(role, res) { const status = res.code; if (expected[role] === 'allow') { pm.test(role + ' passes role guard for DELETE /admin/assignments/:client_id', function () { pm.expect([401, 403]).to.not.include(status); }); } else { pm.test(role + ' denied for DELETE /admin/assignments/:client_id', function () { pm.expect(status).to.eql(expected[role]); }); } }",
+            "Object.keys(roles).forEach(function (role) { pm.sendRequest({ url: baseUrl + '/admin/assignments/' + id, method: 'DELETE', header: { Authorization: 'Bearer ' + roles[role] } }, function (err, res) { pm.expect(err).to.eql(null); check(role, res); }); });",
+            "pm.sendRequest({ url: baseUrl + '/admin/assignments/' + id, method: 'DELETE' }, function (err, res) { pm.expect(err).to.eql(null); check('ANONYMOUS', res); });"
+          ] } }]
+        },
+        {
+          "name": "RBAC - Client Profile",
+          "request": { "method": "GET", "url": "{{baseUrl}}/clients/profile" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const baseUrl = pm.environment.get('baseUrl');",
+            "const roles = { SUPER_ADMIN: pm.environment.get('superAdminToken'), ADMIN: pm.environment.get('adminToken'), EMPLOYEE: pm.environment.get('employeeToken'), CLIENT: pm.environment.get('clientToken') };",
+            "const expected = { SUPER_ADMIN: 'allow', ADMIN: 403, EMPLOYEE: 403, CLIENT: 'allow', ANONYMOUS: 401 };",
+            "function check(role, res) { const status = res.code; if (expected[role] === 'allow') { pm.test(role + ' passes role guard for GET /clients/profile', function () { pm.expect([401, 403]).to.not.include(status); }); } else { pm.test(role + ' denied for GET /clients/profile', function () { pm.expect(status).to.eql(expected[role]); }); } }",
+            "Object.keys(roles).forEach(function (role) { pm.sendRequest({ url: baseUrl + '/clients/profile', method: 'GET', header: { Authorization: 'Bearer ' + roles[role] } }, function (err, res) { pm.expect(err).to.eql(null); check(role, res); }); });",
+            "pm.sendRequest({ url: baseUrl + '/clients/profile', method: 'GET' }, function (err, res) { pm.expect(err).to.eql(null); check('ANONYMOUS', res); });"
+          ] } }]
+        },
+        {
+          "name": "RBAC - Client Profile Update",
+          "request": { "method": "PATCH", "url": "{{baseUrl}}/clients/profile" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const baseUrl = pm.environment.get('baseUrl');",
+            "const roles = { SUPER_ADMIN: pm.environment.get('superAdminToken'), ADMIN: pm.environment.get('adminToken'), EMPLOYEE: pm.environment.get('employeeToken'), CLIENT: pm.environment.get('clientToken') };",
+            "const expected = { SUPER_ADMIN: 'allow', ADMIN: 403, EMPLOYEE: 403, CLIENT: 'allow', ANONYMOUS: 401 };",
+            "const body = JSON.stringify({ businessName: 'Acme Corporation', contactPerson: 'John Doe', phone: '+1234567890' });",
+            "function check(role, res) { const status = res.code; if (expected[role] === 'allow') { pm.test(role + ' passes role guard for PATCH /clients/profile', function () { pm.expect([401, 403]).to.not.include(status); }); } else { pm.test(role + ' denied for PATCH /clients/profile', function () { pm.expect(status).to.eql(expected[role]); }); } }",
+            "Object.keys(roles).forEach(function (role) { pm.sendRequest({ url: baseUrl + '/clients/profile', method: 'PATCH', header: { Authorization: 'Bearer ' + roles[role], 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: body } }, function (err, res) { pm.expect(err).to.eql(null); check(role, res); }); });",
+            "pm.sendRequest({ url: baseUrl + '/clients/profile', method: 'PATCH', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: body } }, function (err, res) { pm.expect(err).to.eql(null); check('ANONYMOUS', res); });"
+          ] } }]
+        },
+        {
+          "name": "RBAC - Employee Clients",
+          "request": { "method": "GET", "url": "{{baseUrl}}/employees/clients" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const baseUrl = pm.environment.get('baseUrl');",
+            "const roles = { SUPER_ADMIN: pm.environment.get('superAdminToken'), ADMIN: pm.environment.get('adminToken'), EMPLOYEE: pm.environment.get('employeeToken'), CLIENT: pm.environment.get('clientToken') };",
+            "const expected = { SUPER_ADMIN: 'allow', ADMIN: 403, EMPLOYEE: 'allow', CLIENT: 403, ANONYMOUS: 401 };",
+            "function check(role, res) { const status = res.code; if (expected[role] === 'allow') { pm.test(role + ' passes role guard for GET /employees/clients', function () { pm.expect([401, 403]).to.not.include(status); }); } else { pm.test(role + ' denied for GET /employees/clients', function () { pm.expect(status).to.eql(expected[role]); }); } }",
+            "Object.keys(roles).forEach(function (role) { pm.sendRequest({ url: baseUrl + '/employees/clients', method: 'GET', header: { Authorization: 'Bearer ' + roles[role] } }, function (err, res) { pm.expect(err).to.eql(null); check(role, res); }); });",
+            "pm.sendRequest({ url: baseUrl + '/employees/clients', method: 'GET' }, function (err, res) { pm.expect(err).to.eql(null); check('ANONYMOUS', res); });"
+          ] } }]
+        },
+        {
+          "name": "RBAC - Employee Client Details",
+          "request": { "method": "GET", "url": "{{baseUrl}}/employees/clients/{{clientId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const baseUrl = pm.environment.get('baseUrl');",
+            "const clientId = pm.environment.get('clientId') || pm.environment.get('invalidObjectId');",
+            "const roles = { SUPER_ADMIN: pm.environment.get('superAdminToken'), ADMIN: pm.environment.get('adminToken'), EMPLOYEE: pm.environment.get('employeeToken'), CLIENT: pm.environment.get('clientToken') };",
+            "const expected = { SUPER_ADMIN: 'allow', ADMIN: 403, EMPLOYEE: 'allow', CLIENT: 403, ANONYMOUS: 401 };",
+            "function check(role, res) { const status = res.code; if (expected[role] === 'allow') { pm.test(role + ' passes role guard for GET /employees/clients/:id', function () { pm.expect([401, 403]).to.not.include(status); }); } else { pm.test(role + ' denied for GET /employees/clients/:id', function () { pm.expect(status).to.eql(expected[role]); }); } }",
+            "Object.keys(roles).forEach(function (role) { pm.sendRequest({ url: baseUrl + '/employees/clients/' + clientId, method: 'GET', header: { Authorization: 'Bearer ' + roles[role] } }, function (err, res) { pm.expect(err).to.eql(null); check(role, res); }); });",
+            "pm.sendRequest({ url: baseUrl + '/employees/clients/' + clientId, method: 'GET' }, function (err, res) { pm.expect(err).to.eql(null); check('ANONYMOUS', res); });"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "03 Focused Negative Demo",
+      "item": [
+        {
+          "name": "CLIENT cannot list admin users",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/users"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('client is forbidden from admin users', function () { pm.response.to.have.status(403); });"] } }]
+        },
+        {
+          "name": "EMPLOYEE cannot list admin users",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{employeeToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/users"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('employee is forbidden from admin users', function () { pm.response.to.have.status(403); });"] } }]
+        },
+        {
+          "name": "Anonymous cannot list admin users",
+          "request": { "method": "GET", "url": "{{baseUrl}}/admin/users" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('anonymous is unauthorized for admin users', function () { pm.response.to.have.status(401); });"] } }]
+        },
+        {
+          "name": "Invalid token cannot list admin users",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "not-a-valid-token", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/users"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('invalid token is unauthorized', function () { pm.response.to.have.status(401); });"] } }]
+        },
+        {
+          "name": "ADMIN cannot read client profile",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/clients/profile"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('admin is forbidden from client profile route', function () { pm.response.to.have.status(403); });"] } }]
+        },
+        {
+          "name": "CLIENT cannot list employee clients",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/employees/clients"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('client is forbidden from employee route', function () { pm.response.to.have.status(403); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "99 Logout Coverage - Run Last",
+      "description": "Run this folder only at the end of a session. Logout revokes refresh tokens and may invalidate subsequent demo flow assumptions.",
+      "item": [
+        {
+          "name": "Logout - SUPER_ADMIN",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{superAdminToken}}", "type": "string" }] },
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/logout"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('SUPER_ADMIN can logout', function () { pm.response.to.have.status(204); });"] } }]
+        },
+        {
+          "name": "Logout - ADMIN",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/logout"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('ADMIN can logout', function () { pm.response.to.have.status(204); });"] } }]
+        },
+        {
+          "name": "Logout - EMPLOYEE",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{employeeToken}}", "type": "string" }] },
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/logout"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('EMPLOYEE can logout', function () { pm.response.to.have.status(204); });"] } }]
+        },
+        {
+          "name": "Logout - CLIENT",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{clientToken}}", "type": "string" }] },
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/logout"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('CLIENT can logout', function () { pm.response.to.have.status(204); });"] } }]
+        },
+        {
+          "name": "Logout - Anonymous",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/logout"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('anonymous cannot logout', function () { pm.response.to.have.status(401); });"] } }]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/v1" },
+    { "key": "rootUrl", "value": "http://localhost:3000" }
+  ]
+}
